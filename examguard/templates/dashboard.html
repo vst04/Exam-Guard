@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Dashboard | EXAM GUARD</title>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="nav__header">
+          <div class="nav__logo">
+            <a href="index.html">
+              <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="logo" />
+              <span>EXAM GUARD</span>
+            </a>
+          </div>
+          <div class="nav__menu__btn" id="menu-btn">
+            <i class="ri-menu-line"></i>
+          </div>
+        </div>
+        <ul class="nav__links" id="nav-links">
+          <a href="{{ url_for('index') }}">Home</a>
+          <a href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('login') }}">Login</a>
+          <a href="{{ url_for('about') }}">About</a>
+
+        </ul>
+      </nav>
+      
+    <!-- Main Content -->
+    <main class="dashboard">
+      <section class="live-feed">
+        <h2>Live Camera Feed</h2>
+        <div class="camera-feed">
+            <img src="http://localhost:5000/video_feed" alt="Live Camera Feed" onerror="handleVideoError(this)">
+        </div>
+    </section>
+
+      <section class="parameters">
+        <h2>Parameters</h2>
+        <div class="stats">
+          <div class="stat-card">
+            <i class="ri-group-line"></i>
+            <div class="stat-info">
+              <h2>120</h2>
+              <p>Students Count</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="ri-eye-line"></i>
+            <div class="stat-info">
+              <h2>15</h2>
+              <p>Incidents Detected</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="ri-seat-line"></i>
+            <div class="stat-info">
+              <h2>200</h2>
+              <p>Seats Available</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="ri-alert-line"></i>
+            <div class="stat-info">
+              <h2>5</h2>
+              <p>Alerts Sent</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
