@@ -34,12 +34,16 @@
       </nav>
       
     <!-- Main Content -->
-    <main class="dashboard">
-      <section class="live-feed">
-        <h2>Live Camera Feed</h2>
-        <div class="camera-feed">
-            <img src="http://localhost:5000/video_feed" alt="Live Camera Feed" onerror="handleVideoError(this)">
-        </div>
+    <section class="dashboard">
+      <h2 class="section__title">Live Camera Feed</h2>
+      <div class="camera-feed">
+        <img src="http://localhost:5001/video_feed" alt="Live Camera Feed" onerror="handleVideoError(this)">
+      </div>
+      
+      <h2 class="section__title">Parameters</h2>
+      <div class="parameters">
+        <!-- Your existing parameters markup -->
+      </div>
     </section>
 
       <section class="parameters">
@@ -48,34 +52,34 @@
           <div class="stat-card">
             <i class="ri-group-line"></i>
             <div class="stat-info">
-              <h2>120</h2>
-              <p>Students Count</p>
+              <h2>-</h2>
+              <p>Students Detected</p>
             </div>
           </div>
           <div class="stat-card">
             <i class="ri-eye-line"></i>
             <div class="stat-info">
-              <h2>15</h2>
+              <h2>-</h2>
               <p>Incidents Detected</p>
             </div>
           </div>
           <div class="stat-card">
             <i class="ri-seat-line"></i>
             <div class="stat-info">
-              <h2>200</h2>
+              <h2>-</h2>
               <p>Seats Available</p>
             </div>
           </div>
           <div class="stat-card">
             <i class="ri-alert-line"></i>
             <div class="stat-info">
-              <h2>5</h2>
+              <h2>-</h2>
               <p>Alerts Sent</p>
             </div>
           </div>
         </div>
       </section>
     </main>
-    <script src="dashboard.js"></script>
+    <script src="examguard/static/js/dashboard.js"></script>
   </body>
 </html>

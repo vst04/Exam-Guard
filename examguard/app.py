@@ -121,6 +121,17 @@ def handle_error(error):
         "message": "An unexpected error occurred"
     }), 500
 
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
+
+def emit_detection_update(detection_data):
+    socketio.emit('detection_update', detection_data)
+
 if __name__ == '__main__':
     app.debug = True
     logger.info("Starting application")

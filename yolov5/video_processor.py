@@ -10,8 +10,17 @@ from collections import deque
 import torch
 from models.experimental import attempt_load
 from utils.general import non_max_suppression, scale_boxes
-from flask import Flask, Response, render_template, send_from_directory
 import os
+from flask import Flask, Response
+from flask_cors import CORS
+
+# Initialize Flask for streaming
+stream_app = Flask(__name__)
+CORS(stream_app)
+
+# Global variables for frame sharing
+global_frame = None
+frame_lock = threading.Lock()
 
 print(f"PyTorch CUDA available: {torch.cuda.is_available()}")
 print(f"PyTorch CUDA device count: {torch.cuda.device_count()}")
@@ -62,6 +71,30 @@ if USE_CUDA:
 else:
     print("No CUDA devices available")
 
+def set_global_frame(frame):
+    global global_frame
+    with frame_lock:
+        global_frame = frame.copy() if frame is not None else None
+
+@stream_app.route('/video_feed')
+def video_feed():
+    def generate_frames():
+        while True:
+            with frame_lock:
+                if global_frame is not None:
+                    ret, buffer = cv2.imencode('.jpg', global_frame)
+                    if not ret:
+                        continue
+                    frame_bytes = buffer.tobytes()
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+    return Response(generate_frames(),
+                   mimetype='multipart/x-mixed-replace; boundary=frame')
+
+def run_stream_server():
+    stream_app.run(host='0.0.0.0', port=5001)
+
 def list_available_cameras(max_tested=10):
     available_cameras = []
     for i in range(max_tested):
@@ -70,10 +103,6 @@ def list_available_cameras(max_tested=10):
             available_cameras.append(i)
         cap.release()
     return available_cameras
-
-
-
-
 
 class HeadTurnTracker:
     def __init__(self, person_id):
@@ -157,7 +186,6 @@ class VideoStreamThread(threading.Thread):
         print(f"Attempting to open camera {self.src}")
         self.cap = cv2.VideoCapture(self.src)
         
-        # Set camera properties
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, PROCESS_WIDTH)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, PROCESS_HEIGHT)
         self.cap.set(cv2.CAP_PROP_FPS, 30)
@@ -241,7 +269,6 @@ class HolisticDetectionThread(threading.Thread):
         self.yolo_model.eval()
         print("YOLOv5 model initialized successfully")
         
-        # Initialize MediaPipe
         print("Initializing MediaPipe Holistic...")
         self.holistic = mp_holistic.Holistic(
             min_detection_confidence=0.7,
@@ -256,43 +283,6 @@ class HolisticDetectionThread(threading.Thread):
     def detect_upright_hand(self, hand_landmarks, pose_landmarks):
         if not hand_landmarks or not pose_landmarks:
             return False
-        
-class VideoProcessor:
-    def __init__(self):
-        self.vs_thread = None
-        self.holistic_thread = None
-        self.is_running = False
-        
-    def start(self):
-        print("Starting video processor...")
-        cameras = list_available_cameras()
-        if not cameras:
-            print("No cameras available!")
-            return False
-            
-        self.vs_thread = VideoStreamThread(src=cameras[0])
-        self.holistic_thread = HolisticDetectionThread()
-        
-        self.vs_thread.start()
-        self.holistic_thread.start()
-        self.is_running = True
-        return True
-        
-    def stop(self):
-        print("Stopping video processor...")
-        if self.vs_thread:
-            self.vs_thread.stop()
-        if self.holistic_thread:
-            self.holistic_thread.stop()
-        if self.vs_thread:
-            self.vs_thread.join()
-        if self.holistic_thread:
-            self.holistic_thread.join()
-        self.is_running = False
-        
-    def get_frame(self):
-        if not self.is_running:
-            return None
             
         try:
             left_shoulder = pose_landmarks.landmark[mp_holistic.PoseLandmark.LEFT_SHOULDER].y
@@ -352,7 +342,7 @@ class VideoProcessor:
             img = img.unsqueeze(0)
 
         with torch.no_grad():
-            pred = self.yolo_model(img.half())[0]  # Ensure half-precision
+            pred = self.yolo_model(img.half())[0]
         pred = non_max_suppression(pred, 0.25, 0.45, classes=None, agnostic=False)
 
         yolo_detections = []
@@ -395,8 +385,6 @@ class VideoProcessor:
                 
                 head_angle = detect_head_turn_angle(results.pose_landmarks)
                 warning_active, smoothed_angle = self.head_trackers[person_id].update(head_angle)
-                
-                # Continuing from where we left off in the process_frame method of HolisticDetectionThread
                 
                 left_hand_upright = False
                 right_hand_upright = False
@@ -450,32 +438,17 @@ def main():
     
     print(f"Available camera indices: {cameras}")
     
+    # Start video streaming server
+    stream_thread = threading.Thread(target=run_stream_server)
+    stream_thread.daemon = True
+    stream_thread.start()
+    print("Video streaming server started on port 5001")
+    
     vs_thread = VideoStreamThread(src=cameras[0])
     holistic_thread = HolisticDetectionThread()
     
     vs_thread.start()
     holistic_thread.start()
-
-    def generate_frames():
-        global latest_frame
-        while True:
-            try:
-                with frame_lock:
-                    if latest_frame is not None:
-                        ret, buffer = cv2.imencode('.jpg', latest_frame)
-                        if ret:
-                            frame = buffer.tobytes()
-                            yield (b'--frame\r\n'
-                                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                        else:
-                            print("Failed to encode frame")
-                            time.sleep(0.1)
-                    else:
-                        print("No frame available")
-                        time.sleep(0.1)
-            except Exception as e:
-                print(f"Error in generate_frames: {e}")
-                time.sleep(0.1)
     
     # Give threads time to initialize
     time.sleep(1)
@@ -489,7 +462,6 @@ def main():
     
     try:
         while True:
-            # Add a small delay to prevent CPU overload
             time.sleep(0.01)
             
             if vs_thread.stopped or holistic_thread.stopped:
@@ -497,7 +469,6 @@ def main():
                 break
                 
             try:
-                # Add timeout to prevent infinite blocking
                 frame, results = result_queue.get(timeout=1.0)
                 holistic_results, multi_results, yolo_detections = results
             except queue.Empty:
@@ -511,7 +482,6 @@ def main():
                 print("Received empty frame")
                 continue
                 
-            # Rest of your existing drawing code...
             # Draw YOLO detections
             for (xyxy, label, conf) in yolo_detections:
                 x1, y1, x2, y2 = xyxy
@@ -576,28 +546,44 @@ def main():
                             (status_x + status_width, status_y + status_height),
                             COLORS['BACKGROUND'], -1)
                 
+                # Update status text
                 text_y = status_y + 25
-                line_spacing = 25
+                cv2.putText(frame, f'Person {person_id}', (status_x + 10, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, COLORS['TEXT'], 2)
                 
-                # Update FPS counter
-                fps_counter += 1
-                if (time.time() - fps_start_time) > 1.0:
-                    fps = fps_counter
-                    fps_counter = 0
-                    fps_start_time = time.time()
+                text_y += 25
+                cv2.putText(frame, f'Head Angle: {head_angle:.1f}°', 
+                           (status_x + 10, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
+                           COLORS['HEAD_WARNING'] if abs(head_angle) > HEAD_TURN_THRESHOLD else COLORS['TEXT'], 2)
                 
-                cv2.putText(frame, f'FPS: {fps}', (10, 30),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS['FPS'], 2)
-                
-                # Display people count
-                cv2.putText(frame, f'People Detected: {len(multi_results)}', 
-                          (10, 60),
-                          cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS['TEXT'], 2)
+                text_y += 25
+                cv2.putText(frame, f'Hands Up: {"Yes" if hands_active else "No"}',
+                           (status_x + 10, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                           COLORS['HAND_WARNING'] if hands_active else COLORS['TEXT'], 2)
             
-            # Display frame
-            if frame is not None:
-                display_frame = cv2.resize(frame, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
-                cv2.imshow('Holistic Detection', display_frame)
+            # Update FPS counter
+            fps_counter += 1
+            if (time.time() - fps_start_time) > 1.0:
+                fps = fps_counter
+                fps_counter = 0
+                fps_start_time = time.time()
+            
+            cv2.putText(frame, f'FPS: {fps}', (10, 30),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS['FPS'], 2)
+            
+            # Display people count
+            cv2.putText(frame, f'People Detected: {len(multi_results)}', 
+                      (10, 60),
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.8, COLORS['TEXT'], 2)
+            
+            # Update global frame for streaming
+            set_global_frame(frame)
+            
+            # Display frame locally
+            display_frame = cv2.resize(frame, (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+            cv2.imshow('Holistic Detection', display_frame)
             
             # Check for quit key
             key = cv2.waitKey(1) & 0xFF
@@ -607,7 +593,8 @@ def main():
                 
     except Exception as e:
         print(f"Error in main loop: {e}")
-        traceback.print_exc()  # Print full stack trace
+        import traceback
+        traceback.print_exc()
         
     finally:
         print("Cleaning up...")

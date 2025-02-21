@@ -75,11 +75,16 @@ const passwordToggle = (inputId, eyeId) => {
 
 // Video feed error handling function
 function handleVideoError(img) {
-    console.log("Video feed error, attempting to reconnect...");
-    setTimeout(() => {
-        img.src = "http://localhost:5000/video_feed?" + new Date().getTime();
-    }, 5000);
+  console.error("Video feed error");
+  // Retry connection after 5 seconds
+  setTimeout(() => {
+      img.src = "http://localhost:5000/video_feed?" + new Date().getTime();
+  }, 5000);
 }
+// Add this to your existing script
+document.getElementById('video-feed').onerror = function() {
+  handleVideoError(this);
+};
 
 document.addEventListener("DOMContentLoaded", function () {
   const loginContainer = document.getElementById("loginAccessRegister");
