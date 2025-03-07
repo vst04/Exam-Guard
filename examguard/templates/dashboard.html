@@ -3,19 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='assets/favicon.ico') }}">
     <link
       href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <title>Dashboard | EXAM GUARD</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
   </head>
   <body>
     <!-- Navigation Bar -->
     <nav>
         <div class="nav__header">
           <div class="nav__logo">
-            <a href="index.html">
+            <a href="{{ url_for('index') }}">
               <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="logo" />
               <span>EXAM GUARD</span>
             </a>
@@ -27,59 +34,495 @@
         <ul class="nav__links" id="nav-links">
           <a href="{{ url_for('index') }}">Home</a>
           <a href="{{ url_for('dashboard') }}">Dashboard</a>
-          <a href="{{ url_for('login') }}">Login</a>
           <a href="{{ url_for('about') }}">About</a>
-
+          <a href="{{ url_for('logout') }}">Logout</a>
         </ul>
       </nav>
       
     <!-- Main Content -->
-    <section class="dashboard">
-      <h2 class="section__title">Live Camera Feed</h2>
-      <div class="camera-feed">
-        <img src="http://localhost:5001/video_feed" alt="Live Camera Feed" onerror="handleVideoError(this)">
+    <div class="container">
+        <div class="header">
+            <h1>Exam Monitoring Dashboard</h1>
+            <div class="user-info">
+                <span>Welcome, {{ user }}</span>
+            </div>
       </div>
       
-      <h2 class="section__title">Parameters</h2>
-      <div class="parameters">
-        <!-- Your existing parameters markup -->
-      </div>
-    </section>
+        <div class="main-content">
+            <div class="video-container">
+                <h2>Live Video Feed</h2>
+                <div class="video-wrapper">
+                    <video id="webcamVideo" class="video-feed" autoplay playsinline></video>
+                    <canvas id="outputCanvas" class="video-feed"></canvas>
+                </div>
+                <div class="warning" id="warning">
+                    <strong>Warning:</strong> <span id="warningText"></span>
+                </div>
+                <div class="controls">
+                    <button class="control-btn start-btn" id="start-btn">Start Monitoring</button>
+                    <button class="control-btn stop-btn" id="stop-btn" disabled>Stop Monitoring</button>
+                    <button class="control-btn" id="switch-camera">Switch Camera</button>
+                </div>
+            </div>
 
-      <section class="parameters">
-        <h2>Parameters</h2>
-        <div class="stats">
-          <div class="stat-card">
-            <i class="ri-group-line"></i>
-            <div class="stat-info">
-              <h2>-</h2>
-              <p>Students Detected</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <i class="ri-eye-line"></i>
-            <div class="stat-info">
-              <h2>-</h2>
-              <p>Incidents Detected</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <i class="ri-seat-line"></i>
-            <div class="stat-info">
-              <h2>-</h2>
-              <p>Seats Available</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <i class="ri-alert-line"></i>
-            <div class="stat-info">
-              <h2>-</h2>
-              <p>Alerts Sent</p>
+            <div class="stats-container">
+                <h2>Detection Statistics</h2>
+                <div class="stats-box">
+                    <h3>Head Movement</h3>
+                    <p>Current Angle: <span id="headAngle">0°</span></p>
+                    <p>Total Warnings: <span id="headWarnings">0</span></p>
+                </div>
+                <div class="stats-box">
+                    <h3>Hand Detection</h3>
+                    <p>Raised Hands: <span id="raisedHands">No</span></p>
+                </div>
+                <div class="stats-box">
+                    <h3>Session Information</h3>
+                    <p>Duration: <span id="sessionTime">00:00:00</span></p>
+                    <p>Status: <span id="monitoringStatus">Inactive</span></p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="stats-number" id="people-count">0</div>
+                        <div class="stats-label">People Detected</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number" id="head-turns">0</div>
+                        <div class="stats-label">Head Turns</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number" id="hand-gestures">0</div>
+                        <div class="stats-label">Hand Gestures</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number" id="total-incidents">0</div>
+                        <div class="stats-label">Total Incidents</div>
+                    </div>
+                </div>
             </div>
           </div>
         </div>
-      </section>
-    </main>
-    <script src="examguard/static/js/dashboard.js"></script>
+    </div>
+
+    <script>
+        const socket = io();
+        let monitoring = false;
+        let sessionStartTime = null;
+        let incidentCount = 0;
+        let currentStream = null;
+
+        // DOM Elements
+        const videoFeed = document.getElementById('webcamVideo');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const ctx = outputCanvas.getContext('2d');
+        const warningDiv = document.getElementById('warning');
+        const warningText = document.getElementById('warningText');
+        const headAngleSpan = document.getElementById('headAngle');
+        const headWarningsSpan = document.getElementById('headWarnings');
+        const raisedHandsSpan = document.getElementById('raisedHands');
+        const sessionTimeSpan = document.getElementById('sessionTime');
+        const monitoringStatusSpan = document.getElementById('monitoringStatus');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const switchCameraBtn = document.getElementById('switch-camera');
+        const peopleCountSpan = document.getElementById('people-count');
+        const incidentCountSpan = document.getElementById('total-incidents');
+
+        // Hide warning initially
+        warningDiv.style.display = 'none';
+
+        // Set up video dimensions
+        const videoWidth = 640;
+        const videoHeight = 480;
+        videoFeed.width = videoWidth;
+        videoFeed.height = videoHeight;
+        outputCanvas.width = videoWidth;
+        outputCanvas.height = videoHeight;
+
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: videoWidth,
+                        height: videoHeight,
+                        facingMode: 'user'
+                    }
+                });
+                
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                
+                currentStream = stream;
+                videoFeed.srcObject = stream;
+                
+                return new Promise((resolve) => {
+                    videoFeed.onloadedmetadata = () => {
+                        resolve(videoFeed);
+                    };
+                });
+            } catch (error) {
+                console.error('Error initializing camera:', error);
+                showWarning('Failed to access camera. Please check permissions.');
+                throw error;
+            }
+        }
+
+        // Switch camera function
+        async function switchCamera() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length < 2) {
+                    showWarning('No additional cameras found');
+                    return;
+                }
+                
+                const currentDevice = videoDevices.find(device => 
+                    currentStream && currentStream.getVideoTracks()[0].label === device.label
+                );
+                const nextDevice = videoDevices[
+                    (videoDevices.indexOf(currentDevice) + 1) % videoDevices.length
+                ];
+                
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        deviceId: nextDevice.deviceId,
+                        width: videoWidth,
+                        height: videoHeight
+                    }
+                });
+                
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                
+                currentStream = newStream;
+                videoFeed.srcObject = newStream;
+            } catch (error) {
+                console.error('Error switching camera:', error);
+                showWarning('Failed to switch camera');
+            }
+        }
+
+        // Initialize camera on page load
+        setupCamera().catch(error => {
+            console.error('Failed to initialize camera:', error);
+        });
+
+        // Add event listener for switch camera button
+        switchCameraBtn.addEventListener('click', switchCamera);
+
+        // Process video frames
+        function processFrame() {
+            if (!monitoring) return;
+            
+            ctx.drawImage(videoFeed, 0, 0, videoWidth, videoHeight);
+            
+            // Create ImageData for YOLO processing
+            const imageData = ctx.getImageData(0, 0, videoWidth, videoHeight);
+            
+            // Process frame with MediaPipe
+            if (faceMesh && hands) {
+                faceMesh.send({image: videoFeed});
+                hands.send({image: videoFeed});
+            }
+
+            // Send frame for YOLO processing
+            socket.emit('process_frame', {
+                frame: imageData.data,
+                width: videoWidth,
+                height: videoHeight
+            });
+            
+            requestAnimationFrame(processFrame);
+        }
+
+        // Initialize MediaPipe Face Mesh
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }
+        });
+
+        // Initialize MediaPipe Hands
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        // Set up face mesh configuration
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // Set up hands configuration
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // Process results from face mesh
+        faceMesh.onResults((results) => {
+            if (!monitoring) return;
+
+            if (results.multiFaceLandmarks) {
+                for (const landmarks of results.multiFaceLandmarks) {
+                    // Check head orientation
+                    const headPose = calculateHeadPose(landmarks);
+                    if (Math.abs(headPose.yaw) > 30 || Math.abs(headPose.pitch) > 30) {
+                        headWarningsSpan.textContent = parseInt(headWarningsSpan.textContent) + 1;
+                        showWarning("Suspicious head movement detected!");
+                    }
+                }
+            }
+        });
+
+        // Process results from hands detection
+        hands.onResults((results) => {
+            if (!monitoring) return;
+
+            if (results.multiHandLandmarks) {
+                if (results.multiHandLandmarks.length > 0) {
+                    raisedHandsSpan.textContent = 'Yes';
+                    showWarning("Hand movement detected!");
+                }
+            }
+        });
+
+        // Calculate head pose from face landmarks
+        function calculateHeadPose(landmarks) {
+            // Simplified head pose estimation
+            const nose = landmarks[1];
+            const leftEye = landmarks[33];
+            const rightEye = landmarks[263];
+            
+            const yaw = Math.atan2(nose.x - leftEye.x, nose.z - leftEye.z);
+            const pitch = Math.atan2(nose.y - ((leftEye.y + rightEye.y) / 2), nose.z - ((leftEye.z + rightEye.z) / 2));
+            
+            return {
+                yaw: yaw * (180 / Math.PI),
+                pitch: pitch * (180 / Math.PI)
+            };
+        }
+
+        // Show warning message
+        function showWarning(message) {
+            warningText.textContent = message;
+            warningDiv.style.display = 'block';
+            incidentCount++;
+            incidentCountSpan.textContent = incidentCount;
+            
+            // Hide warning after 3 seconds
+            setTimeout(() => {
+                warningDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Start monitoring
+        startBtn.addEventListener('click', async () => {
+            try {
+                monitoring = true;
+                sessionStartTime = new Date();
+                monitoringStatusSpan.textContent = 'Active';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+                // Reset counters
+                incidentCount = 0;
+                incidentCountSpan.textContent = '0';
+                headWarningsSpan.textContent = '0';
+                
+                // Start MediaPipe processors
+                await faceMesh.initialize();
+                await hands.initialize();
+                
+                // Start frame processing
+                processFrame();
+                updateSessionTime();
+
+                // Emit start monitoring event
+                socket.emit('start_monitoring');
+                
+                showNotification({
+                    type: 'INFO',
+                    message: 'Monitoring started successfully'
+                });
+            } catch (error) {
+                console.error('Error starting monitoring:', error);
+                showWarning('Failed to start monitoring. Please try again.');
+                monitoring = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        });
+
+        // Stop monitoring
+        stopBtn.addEventListener('click', () => {
+            try {
+                monitoring = false;
+                sessionStartTime = null;
+                monitoringStatusSpan.textContent = 'Inactive';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                warningDiv.style.display = 'none';
+
+                // Stop MediaPipe processors
+                faceMesh.close();
+                hands.close();
+
+                // Clear canvas
+                ctx.clearRect(0, 0, videoWidth, videoHeight);
+
+                // Emit stop monitoring event
+                socket.emit('stop_monitoring');
+                
+                showNotification({
+                    type: 'INFO',
+                    message: 'Monitoring stopped'
+                });
+            } catch (error) {
+                console.error('Error stopping monitoring:', error);
+                showWarning('Error stopping monitoring');
+            }
+        });
+
+        // Update session time
+        function updateSessionTime() {
+            if (!sessionStartTime || !monitoring) return;
+
+            const now = new Date();
+            const diff = now - sessionStartTime;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            sessionTimeSpan.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (monitoring) {
+                requestAnimationFrame(updateSessionTime);
+            }
+        }
+
+        // Initialize
+        stopBtn.disabled = true;
+        monitoringStatusSpan.textContent = 'Inactive';
+
+        // Handle menu button for mobile
+        const menuBtn = document.getElementById('menu-btn');
+        const navLinks = document.getElementById('nav-links');
+        
+        menuBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('show');
+        });
+
+        // Socket connection for real-time updates
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('detection_result', (data) => {
+            if (!monitoring) return;
+
+            if (data.detections) {
+                // Update people count
+                peopleCountSpan.textContent = data.detections.length;
+
+                // Process each detection
+                data.detections.forEach(detection => {
+                    // Draw bounding box on canvas
+                    ctx.strokeStyle = '#00ff00';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(
+                        detection.bbox[0],
+                        detection.bbox[1],
+                        detection.bbox[2],
+                        detection.bbox[3]
+                    );
+
+                    // Show warning if confidence is high enough
+                    if (detection.confidence > 0.75) {
+                        showWarning(`Detected ${detection.class} with ${Math.round(detection.confidence * 100)}% confidence`);
+                    }
+                });
+            }
+
+            // Handle head movement detection
+            if (data.head_angle) {
+                headAngleSpan.textContent = `${Math.round(data.head_angle)}°`;
+                if (Math.abs(data.head_angle) > 30) {
+                    const currentWarnings = parseInt(headWarningsSpan.textContent);
+                    headWarningsSpan.textContent = currentWarnings + 1;
+                    showWarning('Suspicious head movement detected');
+                }
+            }
+
+            // Handle hand detection
+            if (data.hands_detected) {
+                raisedHandsSpan.textContent = 'Yes';
+                const currentGestures = parseInt(document.getElementById('hand-gestures').textContent);
+                document.getElementById('hand-gestures').textContent = currentGestures + 1;
+                showWarning('Hand movement detected');
+            } else {
+                raisedHandsSpan.textContent = 'No';
+            }
+        });
+
+        // Show notification function
+        function showNotification({ type, message }) {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = `notification notification-${type.toLowerCase()}`;
+            notificationDiv.textContent = message;
+            document.body.appendChild(notificationDiv);
+
+            setTimeout(() => {
+                notificationDiv.remove();
+            }, 3000);
+        }
+
+        // Add notification styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 5px;
+                color: white;
+                font-weight: 500;
+                z-index: 1000;
+                animation: slideIn 0.3s ease-out;
+            }
+
+            .notification-info {
+                background-color: #007bff;
+            }
+
+            .notification-error {
+                background-color: #dc3545;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
   </body>
 </html>
