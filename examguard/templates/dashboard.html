@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Proctoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Socket.IO Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            /* Enhanced color palette with more vibrant options */
+            --background-dark: #0a0d12;
+            --background-darker: #050709;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #ffffff;
+            --text-secondary: #8b949e;
+            --sky-blue: #00b4ff;
+            --sky-blue-dark: #0087cc;
+            --sky-blue-light: #33c5ff;
+            --sky-blue-transparent: rgba(0, 180, 255, 0.12);
+            --sky-blue-glow: rgba(0, 180, 255, 0.15);
+            --red: #ff4a4a;
+            --yellow: #ffbb33;
+            
+            /* Enhanced shadow system */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+            
+            /* Enhanced glow effects */
+            --glow-blue: 0 0 25px rgba(0, 180, 255, 0.25);
+            --glow-hover: 0 0 35px rgba(0, 180, 255, 0.35);
+            --glow-active: 0 0 45px rgba(0, 180, 255, 0.45);
+        }
+
+        /* Modern Reset */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at top right, 
+                                       var(--background-dark), 
+                                       var(--background-darker) 80%);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -0.01em;
+        }
+
+        /* Enhanced Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, 
+                                      rgba(10, 13, 18, 0.95), 
+                                      rgba(5, 7, 9, 0.98));
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(48, 54, 61, 0.5);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 100;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* Enhanced Header */
+        .sidebar-header {
+            padding: 28px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+            background: linear-gradient(
+                to bottom,
+                rgba(22, 27, 34, 0.8),
+                transparent
+            );
+            position: relative;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .logo:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--sky-blue), var(--sky-blue-dark));
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-blue);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Shimmer effect for logo */
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 22px;
+            background: linear-gradient(90deg, var(--text-primary), var(--sky-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 180, 255, 0.3);
+        }
+
+        /* Enhanced Menu Items */
+        .sidebar-menu-item {
+            position: relative;
+            margin: 6px 12px;
+        }
+
+        .sidebar-menu {
+            /* Make menu fill available space */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar-menu-button {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 20px;
+            width: calc(100% - 8px);
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        /* Hover effect with gradient */
+        .sidebar-menu-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                var(--sky-blue-transparent),
+                transparent
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-menu-button:hover {
+            color: var(--sky-blue);
+            transform: translateX(4px);
+        }
+
+        .sidebar-menu-button:hover::before {
+            opacity: 1;
+        }
+
+        /* Active state with animations */
+        .sidebar-menu-button.active {
+            background: linear-gradient(
+                90deg,
+                var(--sky-blue-transparent),
+                transparent
+            );
+            color: var(--sky-blue);
+            font-weight: 600;
+            box-shadow: var(--shadow-md);
+            animation: activeScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes activeScale {
+            0% { transform: scale(0.95); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Improved User Section */
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(48, 54, 61, 0.3);
+            background: linear-gradient(
+                to top,
+                var(--background-darker),
+                transparent
+            );
+            position: relative;
+            overflow: hidden;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sky-blue), var(--sky-blue-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+            box-shadow: var(--glow-blue);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Avatar hover effect */
+        .avatar:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: var(--glow-hover);
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Online status indicator */
+        .user-name::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .user-role {
+            font-size: 15px;
+            color: var(--sky-blue);
+            font-weight: 500;
+            opacity: 0.9;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
+        }
+
+        /* Improved logout button */
+        .logout-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-button:hover {
+            background: rgba(255, 0, 0, 0.899);
+            transform: translateY(-2px);
+        }
+
+        .logout-button i {
+            margin-right: 8px;
+        }
+
+        /* Scrollbar styling */
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--sky-blue) transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: var(--sky-blue);
+            border-radius: 20px;
+            opacity: 0.5;
+        }
+
+        /* Group Headers */
+        .sidebar-group-label {
+            padding: 0 24px;
+            margin: 20px 0 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            opacity: 0.8;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: var(--background-dark);
+        }
+
+        nav {
+            position: fixed;
+            width: calc(100% - 280px); /* Adjust width to account for sidebar */
+            top: 0;
+            right: 0;
+            background-color: var(--background-darker);
+            z-index: 1000;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav__header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--background-darker);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .nav__logo a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav__logo img {
+            max-width: 36px;
+        }
+
+        .nav_menu_btn {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: none;
+        }
+
+        .nav__links {
+            margin-right: 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav__links a {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .nav__links a:hover {
+            color: var(--sky-blue);
+        }
+
+        .content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            margin-top: 60px;
+            scroll-behavior: smooth;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(30, 30, 34, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(48, 54, 61, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                transparent,
+                rgba(0, 180, 255, 0.05),
+                transparent
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.3);
+            background: linear-gradient(
+                to bottom,
+                rgba(30, 30, 34, 0.8),
+                transparent
+            );
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: var(--sky-blue);
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .card-content {
+            padding: 24px;
+            position: relative;
+        }
+
+        /* Modified: Object-fit changed to 'contain' to show full video without cropping */
+        .video-feed {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            background-color: #000;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        #webcam-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Changed from cover to contain */
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .monitoring-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--sky-blue);
+            color: var(--text-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--sky-blue-dark);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(48, 54, 61, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(1, 183, 255, 0.1);
+            border-color: var(--sky-blue);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e03131;
+        }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .paused {
+            filter: blur(2px);
+            opacity: 0.7;
+        }
+
+        .pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 3;
+        }
+
+        /* Alerts Section */
+        .alert-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .alert-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .alert-dot.red {
+            background-color: var(--red);
+        }
+
+        .alert-dot.yellow {
+            background-color: var(--yellow);
+        }
+
+        .alert-count {
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .alert-count.red {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--red);
+        }
+
+        .alert-count.yellow {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--yellow);
+        }
+
+        .alert-count.blue {
+            background-color: rgba(1, 183, 255, 0.2);
+            color: var(--sky-blue);
+        }
+
+        /* Student Monitoring Section */
+        .monitoring-section {
+            margin-top: 20px;
+            scroll-margin-top: 90px; /* Added for smooth scrolling to the section */
+        }
+
+        .monitoring-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+        }
+
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .student-card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            background-color: var(--card-bg);
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+
+        .student-card.alert {
+            border: 1px solid var(--red);
+        }
+
+        .student-video {
+            height: 120px;
+            background-color: #000;
+            position: relative;
+        }
+
+        .student-video img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .student-alert {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--red);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .student-info {
+            padding: 15px;
+        }
+
+        .student-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .student-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .student-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--sky-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .student-violations {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .violation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Analytics View */
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .analytics-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .analytics-table td {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .analytics-table th:not(:first-child),
+        .analytics-table td:not(:first-child) {
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Status indicator for webcam */
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-indicator.connected {
+            background-color: rgba(16, 185, 129, 0.7);
+            color: white;
+        }
+
+        .status-indicator.processing {
+            background-color: rgba(245, 158, 11, 0.7);
+            color: white;
+        }
+
+        .status-indicator.disconnected {
+            background-color: rgba(239, 68, 68, 0.7);
+            color: white;
+        }
+
+        /* Time Display */
+        .time-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        /* Violation alerts */
+        .violation-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: rgba(255, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            z-index: 1000;
+            animation: slide-in 0.5s ease-out, fade-out 0.5s ease-in 2.5s forwards;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        @keyframes slide-in {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Highlight animation for counters */
+        .alert-count.highlight {
+            animation: highlight-pulse 1s ease-out;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        @keyframes highlight-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background-color: rgba(255, 0, 0, 0.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Loading animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--sky-blue);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+            }
+
+            .logo-text,
+            .sidebar-group-label,
+            .sidebar-menu-button span,
+            .user-info {
+                display: none;
+            }
+
+            .sidebar-menu-button {
+                justify-content: center;
+                padding: 15px;
+            }
+
+            .sidebar-footer {
+                justify-content: center;
+                padding: 15px;
+            }
+            
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+            
+            .logout-button span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-group">
+                <div class="sidebar-group-label">Main</div>
+                <ul class="sidebar-menu">
+                    <li class="sidebar-menu-item">
+                        <button class="sidebar-menu-button active" data-tab="dashboard">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </button>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <button class="sidebar-menu-button" data-tab="students" data-view="grid">
+                            <i class="fas fa-users"></i>
+                            <span>Students</span>
+                        </button>
+                    </li>
+                    <li class="sidebar-menu-item">
+                        <button class="sidebar-menu-button" data-tab="analytics" data-view="analytics">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Analytics</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="avatar" id="user-avatar">{{ user[:2].upper() if user else 'AD' }}</div>
+                <div class="user-info">
+                    <div class="user-name">{{ user if user else 'Admin User' }}</div>
+                    <div class="user-role">Proctor</div>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="logout-button">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <nav class="nav__header">
+            <div class="nav__logo">
+                <a href="{{ url_for('index') }}">
+                    <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Logo">
+                    <span>EXAM GUARD</span>
+                </a>
+            </div>
+            <div class="nav_menu_btn">&#9776;</div>
+            <ul class="nav__links" id="nav-links">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('logout') }}">Log out</a>
+                <a href="{{ url_for('about') }}">About</a>
+            </ul>
+        </nav>
+
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div class="tab-content" id="dashboard-tab">
+                <div class="dashboard-grid">
+                    <!-- Video Feed Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-video"></i> Live Exam: Advanced Mathematics</h3>
+                            <p class="card-subtitle">Room 101 • <span id="student-count">0</span> Students • <span id="time-remaining">2h 30m</span> remaining</p>
+                        </div>
+                        <div class="video-feed" id="video-feed-container">
+                            <div class="status-indicator connected" id="webcam-status">
+                                <i class="fas fa-circle"></i>
+                                <span>Connected</span>
+                            </div>
+                            <div class="time-display" id="current-time"></div>
+                            <!-- Using img tag without src, it will be set via JavaScript -->
+                            <img id="webcam-feed" alt="Webcam feed">
+                            <div class="pause-overlay hidden" id="pause-overlay">Feed Paused</div>
+                            <div class="video-controls">
+                                <button class="btn btn-secondary btn-icon" id="pause-btn">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                                <button class="btn btn-secondary btn-icon" id="fullscreen-btn">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                            <div class="monitoring-controls">
+                                <button class="btn btn-success" id="start-monitoring">
+                                    <i class="fas fa-play"></i> Start Monitoring
+                                </button>
+                                <button class="btn btn-danger hidden" id="stop-monitoring">
+                                    <i class="fas fa-stop"></i> Stop Monitoring
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerts Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-exclamation-triangle"></i> Malpractice Alerts</h3>
+                        </div>
+                        <div class="card-content" id="alerts-content">
+                            <div class="alert-item">
+                                <div class="alert-label">
+                                    <div class="alert-dot red"></div>
+                                    <span>Head Turning</span>
+                                </div>
+                                <span class="alert-count red" id="head-turn-count">0</span>
+                            </div>
+                            <div class="alert-item">
+                                <div class="alert-label">
+                                    <div class="alert-dot yellow"></div>
+                                    <span>Hand Gestures</span>
+                                </div>
+                                <span class="alert-count yellow" id="hand-gesture-count">0</span>
+                            </div>
+                            <div class="alert-item">
+                                <div class="alert-label">
+                                    <div class="alert-dot red"></div>
+                                    <span>Phone Usage</span>
+                                </div>
+                                <span class="alert-count red" id="phone-usage-count">0</span>
+                            </div>
+                            <div class="alert-item">
+                                <div class="alert-label">
+                                    <div class="alert-dot yellow"></div>
+                                    <span>Paper Exchange</span>
+                                </div>
+                                <span class="alert-count yellow" id="paper-exchange-count">0</span>
+                            </div>
+                            <div class="alert-item">
+                                <div class="alert-label">
+                                    <div class="alert-dot blue"></div>
+                                    <span>FPS</span>
+                                </div>
+                                <span class="alert-count blue" id="fps-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Monitoring Section -->
+                <div class="card monitoring-section" id="monitoring-section">
+                    <div class="card-header monitoring-header">
+                        <h3 class="card-title"><i class="fas fa-users"></i> Student Monitoring</h3>
+                        <div class="view-toggle">
+                            <button class="btn btn-primary" id="grid-view-btn">Grid View</button>
+                            <button class="btn btn-secondary" id="analytics-view-btn">Analytics View</button>
+                        </div>
+                    </div>
+
+                    <!-- Student Grid View -->
+                    <div class="student-grid" id="student-grid">
+                        <!-- Student cards will be dynamically generated -->
+                    </div>
+
+                    <!-- Analytics View -->
+                    <div class="analytics-view hidden" id="analytics-view">
+                        <table class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Head Turns</th>
+                                    <th>Hand Gestures</th>
+                                    <th>Phone Usage</th>
+                                    <th>Paper Exchange</th>
+                                    <th>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analytics-table-body">
+                                <!-- Analytics data will be dynamically updated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab (Simplified) -->
+            <div class="tab-content hidden" id="students-tab">
+                <!-- This tab will now scroll to the monitoring section instead -->
+            </div>
+
+            <!-- Analytics Tab (Simplified) -->
+            <div class="tab-content hidden" id="analytics-tab">
+                <!-- This tab will now scroll to the monitoring section instead -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to generate a profile photo or use initials
+        function setupUserProfile() {
+            const userEmail = "{{ user }}";
+            const avatar = document.getElementById('user-avatar');
+            
+            if (!avatar) return;
+            
+            // First try using initial as fallback
+            let initial = 'U';
+            if (userEmail && userEmail.length > 0) {
+                initial = userEmail[0].toUpperCase();
+            }
+            
+            // Create a colorful background based on the email
+            let colorCode = 0;
+            if (userEmail) {
+                for (let i = 0; i < userEmail.length; i++) {
+                    colorCode += userEmail.charCodeAt(i);
+                }
+            }
+            
+            // Generate a vibrant color from the hash
+            const hue = colorCode % 360;
+            const backgroundStyle = `hsla(${hue}, 80%, 50%, 0.8)`;
+            
+            // Set the background color and initial
+            avatar.style.backgroundColor = backgroundStyle;
+            avatar.textContent = initial;
+            
+            // Try to get Gravatar if available (simple implementation)
+            if (userEmail) {
+                const hash = generateSimpleHash(userEmail.trim().toLowerCase());
+                const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=200`;
+                
+                // Check if Gravatar exists
+                const img = new Image();
+                img.onload = function() {
+                    // If Gravatar exists, use it
+                    avatar.textContent = '';
+                    avatar.style.backgroundImage = `url(${gravatarUrl})`;
+                };
+                img.onerror = function() {
+                    // Keep the initial if Gravatar doesn't exist
+                };
+                img.src = gravatarUrl;
+            }
+        }
+        
+        // Simple hash function for Gravatar
+        function generateSimpleHash(string) {
+            // Generate a simple hash based on the string
+            let hash = 0;
+            for (let i = 0; i < string.length; i++) {
+                hash = ((hash << 5) - hash) + string.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash).toString(16);
+        }
+
+        // DOM Elements
+        const webcamFeed = document.getElementById('webcam-feed');
+        const videoFeedContainer = document.getElementById('video-feed-container');
+        const pauseOverlay = document.getElementById('pause-overlay');
+        const pauseBtn = document.getElementById('pause-btn');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const startMonitoringBtn = document.getElementById('start-monitoring');
+        const stopMonitoringBtn = document.getElementById('stop-monitoring');
+        const gridViewBtn = document.getElementById('grid-view-btn');
+        const analyticsViewBtn = document.getElementById('analytics-view-btn');
+        const studentGrid = document.getElementById('student-grid');
+        const analyticsView = document.getElementById('analytics-view');
+        const sidebarButtons = document.querySelectorAll('.sidebar-menu-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const webcamStatus = document.getElementById('webcam-status');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const studentCountDisplay = document.getElementById('student-count');
+        const monitoringSection = document.getElementById('monitoring-section');
+
+        // Counters for violations
+        const headTurnCount = document.getElementById('head-turn-count');
+        const handGestureCount = document.getElementById('hand-gesture-count');
+        const phoneUsageCount = document.getElementById('phone-usage-count');
+        const paperExchangeCount = document.getElementById('paper-exchange-count');
+        const fpsCount = document.getElementById('fps-count');
+
+        // Analytics table body
+        const analyticsTableBody = document.getElementById('analytics-table-body');
+
+        // Variables for tracking state
+        let socket = null;
+        let isMonitoring = false;
+        let isPaused = false;
+        let connectionRetries = 0;
+        const MAX_RETRIES = 3;
+        let actualVideoWidth = 1920;  // Default value
+        let actualVideoHeight = 1080; // Default value
+
+        // Student data structure
+        const students = [];
+
+        // Initialize the socket connection
+        function initSocketConnection() {
+            // Close existing socket if any
+            if (socket) {
+                socket.disconnect();
+            }
+
+            socket = io.connect(window.location.origin, {
+                reconnectionAttempts: 5,
+                timeout: 10000
+            });
+
+            socket.on('connect', function() {
+                console.log('Connected to server via WebSocket');
+                webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Connected</span>';
+                webcamStatus.className = 'status-indicator connected';
+                connectionRetries = 0;
+            });
+
+            socket.on('connect_error', function(error) {
+                console.error('Connection error:', error);
+                connectionRetries++;
+                
+                if (connectionRetries >= MAX_RETRIES) {
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Connection failed</span>';
+                    webcamStatus.className = 'status-indicator disconnected';
+                    alert('Failed to connect to server. Please check your connection and refresh the page.');
+                } else {
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Reconnecting...</span>';
+                }
+            });
+
+            socket.on('disconnect', function() {
+                console.log('Disconnected from server');
+                webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Disconnected</span>';
+                webcamStatus.className = 'status-indicator disconnected';
+
+                // Stop monitoring if active
+                if (isMonitoring) {
+                    stopMonitoring(false); // Don't send the stop request to server
+                }
+            });
+
+            // Handle monitoring status updates
+            socket.on('monitoring_status', function(data) {
+                console.log('Monitoring status update:', data);
+
+                if (data.status === 'started') {
+                    isMonitoring = true;
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Processing</span>';
+                    webcamStatus.className = 'status-indicator processing';
+                    startMonitoringBtn.classList.add('hidden');
+                    stopMonitoringBtn.classList.remove('hidden');
+                } else if (data.status === 'stopped') {
+                    isMonitoring = false;
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Connected</span>';
+                    webcamStatus.className = 'status-indicator connected';
+                    startMonitoringBtn.classList.remove('hidden');
+                    stopMonitoringBtn.classList.add('hidden');
+                    
+                    // Clear the webcam feed
+                    webcamFeed.src = '';
+                } else if (data.status === 'error') {
+                    isMonitoring = false;
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Error</span>';
+                    webcamStatus.className = 'status-indicator disconnected';
+                    startMonitoringBtn.classList.remove('hidden');
+                    stopMonitoringBtn.classList.add('hidden');
+                    alert('Monitoring error: ' + data.message);
+                }
+            });
+
+            // Handle camera dimensions event
+            socket.on('camera_dimensions', function(data) {
+                console.log('Received camera dimensions:', data);
+                if (data.width && data.height) {
+                    adjustVideoContainer(data.width, data.height);
+                }
+            });
+
+            // Handle video frame updates with improved display
+            socket.on('video_frame', function(data) {
+                if (!isPaused && isMonitoring && data.frame) {
+                    // Set the image source to the base64 data provided by the server
+                    webcamFeed.src = 'data:image/jpeg;base64,' + data.frame;
+                    
+                    // If this is the first frame, show a success notification
+                    if (!webcamFeed.dataset.hasReceivedFrame) {
+                        webcamFeed.dataset.hasReceivedFrame = 'true';
+                        console.log('First frame received');
+                    }
+                }
+            });
+
+            // Handle detection updates
+            socket.on('detection_update', function(data) {
+                console.log('Detection update:', data);
+
+                // Update global counters in Malpractice Alerts section
+                if (data.stats) {
+                    updateCounterWithAnimation('head-turn-count', data.stats.head_turns || 0);
+                    updateCounterWithAnimation('hand-gesture-count', data.stats.hand_gestures || 0);
+                    updateCounterWithAnimation('phone-usage-count', data.stats.phone_usage || 0);
+                    updateCounterWithAnimation('paper-exchange-count', data.stats.paper_exchange || 0);
+                    updateCounterWithAnimation('fps-count', Math.round(data.stats.fps || 0));
+                    
+                    // Update student count
+                    const totalStudents = data.stats.total_students || 0;
+                    studentCountDisplay.textContent = totalStudents;
+                }
+
+                // Update student-specific violations
+                if (data.frame_detections) {
+                    // Add or update student violations based on detections
+                    if (data.frame_detections.head_turns > 0) {
+                        addViolationAlert('Head Turn Detected');
+                        updateStudentViolations('head_turns');
+                    }
+                    if (data.frame_detections.hand_gestures > 0) {
+                        addViolationAlert('Hand Gesture Detected');
+                        updateStudentViolations('hand_gestures');
+                    }
+                    if (data.frame_detections.phone_usage > 0) {
+                        addViolationAlert('Phone Usage Detected');
+                        updateStudentViolations('phone_usage');
+                    }
+                    if (data.frame_detections.paper_exchange > 0) {
+                        addViolationAlert('Paper Exchange Detected');
+                        updateStudentViolations('paper_exchange');
+                    }
+                }
+            });
+
+            // Handle report ready
+            socket.on('report_ready', function(data) {
+                console.log('Report ready:', data);
+                // Create a download link for the report
+                const downloadLink = document.createElement('a');
+                downloadLink.href = data.path;
+                downloadLink.download = 'malpractice_report.pdf';
+                downloadLink.innerText = 'Download Malpractice Report';
+                downloadLink.className = 'btn btn-primary';
+                downloadLink.style.marginTop = '20px';
+                downloadLink.style.display = 'block';
+                downloadLink.style.textAlign = 'center';
+
+                // Add the download link to the page
+                const alertsContent = document.getElementById('alerts-content');
+                alertsContent.appendChild(downloadLink);
+            });
+        }
+
+        // Function to adjust video container based on camera dimensions
+        function adjustVideoContainer(width, height) {
+            actualVideoWidth = width;
+            actualVideoHeight = height;
+            
+            const aspectRatio = height / width;
+            
+            // Update the container's padding-bottom to maintain aspect ratio
+            // 16:9 aspect ratio is 56.25% padding-bottom
+            videoFeedContainer.style.paddingBottom = '56.25%';
+            
+            console.log(`Adjusted video container to 16:9 aspect ratio`);
+        }
+
+        // Update students with new violations
+        function updateStudentViolations(violationType) {
+            // If no students exist, create a default one
+            if (students.length === 0) {
+                const studentId = 'student_' + (students.length + 1);
+                students.push({
+                    id: studentId,
+                    name: 'Student ' + (students.length + 1),
+                    avatar: studentId.charAt(0).toUpperCase(),
+                    violations: {
+                        head_turns: 0,
+                        hand_gestures: 0,
+                        phone_usage: 0,
+                        paper_exchange: 0
+                    }
+                });
+            }
+
+            // Randomly select a student to update (for demo purposes)
+            const randomIndex = Math.floor(Math.random() * students.length);
+            const student = students[randomIndex];
+            
+            // Update violation count
+            student.violations[violationType]++;
+            
+            // Update UI
+            updateStudentCards();
+            if (!analyticsView.classList.contains('hidden')) {
+                updateAnalyticsTable();
+            }
+        }
+
+        // Helper function to update counter with animation
+        function updateCounterWithAnimation(elementId, newValue) {
+            const element = document.getElementById(elementId);
+            const currentValue = parseInt(element.textContent);
+            
+            if (newValue > currentValue) {
+                // Add highlight effect
+                element.classList.add('highlight');
+                setTimeout(() => element.classList.remove('highlight'), 1000);
+                
+                // Update the value
+                element.textContent = newValue;
+            } else {
+                element.textContent = newValue;
+            }
+        }
+
+        // Add function to show violation alerts
+        function addViolationAlert(violationType) {
+            const alert = document.createElement('div');
+            alert.className = 'violation-alert';
+            alert.innerHTML = `
+                <strong>${violationType}</strong>
+            `;
+            document.body.appendChild(alert);
+            
+            // Remove the alert after 3 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+
+        // Generate student cards
+        function updateStudentCards() {
+            studentGrid.innerHTML = '';
+
+            students.forEach(student => {
+                const totalViolations = Object.values(student.violations).reduce((a, b) => a + b, 0);
+                const hasAlert = totalViolations > 0;
+
+                const studentCard = document.createElement('div');
+                studentCard.className = `student-card ${hasAlert ? 'alert' : ''}`;
+
+                studentCard.innerHTML = `
+                    <div class="student-video">
+                        <img src="https://placehold.co/300x200/000000/FFFFFF/png?text=Student+${student.id}" alt="${student.name} video feed">
+                        ${hasAlert ? `
+                            <div class="student-alert">
+                                <i class="fas fa-exclamation-circle"></i> <span class="student-violation-count">${totalViolations}</span>
+                            </div>` : ''}
+                    </div>
+                    <div class="student-info">
+                        <div class="student-header">
+                            <div class="student-name">
+                                <div class="student-avatar">${student.avatar}</div>
+                                <span>${student.name}</span>
+                            </div>
+                        </div>
+                        <div class="student-violations"></div>
+                    </div>
+                `;
+
+                // Add violations
+                const violationsContainer = studentCard.querySelector('.student-violations');
+                for (const [type, count] of Object.entries(student.violations)) {
+                    if (count > 0) {
+                        const label = type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        const colorClass = (type === 'head_turns' || type === 'phone_usage') ? 'red' : 'yellow';
+                        
+                        const violationItem = document.createElement('div');
+                        violationItem.className = 'violation-item';
+                        violationItem.innerHTML = `
+                            <span>${label}</span>
+                            <span class="alert-count ${colorClass}">${count}</span>
+                        `;
+                        violationsContainer.appendChild(violationItem);
+                    }
+                }
+
+                studentGrid.appendChild(studentCard);
+            });
+        }
+
+        // Update analytics table (removed the Actions column)
+        function updateAnalyticsTable() {
+            analyticsTableBody.innerHTML = '';
+
+            students.forEach(student => {
+                const totalViolations = Object.values(student.violations).reduce((a, b) => a + b, 0);
+                let riskLevel = 'Low';
+                let riskClass = 'blue';
+
+                if (totalViolations > 5) {
+                    riskLevel = 'High';
+                    riskClass = 'red';
+                } else if (totalViolations > 2) {
+                    riskLevel = 'Medium';
+                    riskClass = 'yellow';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="student-name">
+                            <div class="student-avatar">${student.avatar}</div>
+                            <span>${student.name}</span>
+                        </div>
+                    </td>
+                    <td>${student.violations.head_turns}</td>
+                    <td>${student.violations.hand_gestures}</td>
+                    <td>${student.violations.phone_usage}</td>
+                    <td>${student.violations.paper_exchange}</td>
+                    <td><span class="alert-count ${riskClass}">${riskLevel}</span></td>
+                `;
+
+                analyticsTableBody.appendChild(row);
+            });
+        }
+
+        // Start monitoring with improved error handling
+        function startMonitoring() {
+            if (!isMonitoring && socket && socket.connected) {
+                // Update UI to show starting state
+                webcamStatus.innerHTML = '<div class="loading-spinner"></div><span>Starting...</span>';
+                webcamStatus.className = 'status-indicator processing';
+                
+                // Clear any previous frames
+                webcamFeed.src = '';
+                webcamFeed.dataset.hasReceivedFrame = '';
+                
+                // Send the start monitoring request to server
+                socket.emit('start_monitoring_request');
+                
+                // Set a timeout to check if video stream has started
+                setTimeout(function() {
+                    if (isMonitoring && !webcamFeed.dataset.hasReceivedFrame) {
+                        console.warn("No video frames received after 10 seconds");
+                        webcamStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>No video received</span>';
+                        
+                        // Offer a retry option
+                        if (confirm("No video frames received. Would you like to retry?")) {
+                            stopMonitoring(true);
+                            setTimeout(() => startMonitoring(), 1000);
+                        }
+                    }
+                }, 10000);
+            } else if (!socket || !socket.connected) {
+                alert("Not connected to server. Trying to reconnect...");
+                initSocketConnection();
+                setTimeout(() => {
+                    if (socket && socket.connected) {
+                        startMonitoring();
+                    }
+                }, 2000);
+            }
+        }
+
+        // Stop monitoring with improved handling
+        function stopMonitoring(sendToServer = true) {
+            if (isMonitoring && socket) {
+                // Update UI to indicate stopping
+                webcamStatus.innerHTML = '<div class="loading-spinner"></div><span>Stopping...</span>';
+                
+                // Only send stop request if we're still connected and requested
+                if (socket.connected && sendToServer) {
+                    socket.emit('stop_monitoring_request');
+                } else {
+                    // Manually update state if not sending to server
+                    isMonitoring = false;
+                    webcamStatus.innerHTML = '<i class="fas fa-circle"></i> <span>Connected</span>';
+                    webcamStatus.className = 'status-indicator connected';
+                    startMonitoringBtn.classList.remove('hidden');
+                    stopMonitoringBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // Toggle pause on the video feed
+        function togglePause() {
+            isPaused = !isPaused;
+
+            if (isPaused) {
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                webcamFeed.classList.add('paused');
+                pauseOverlay.classList.remove('hidden');
+            } else {
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                webcamFeed.classList.remove('paused');
+                pauseOverlay.classList.add('hidden');
+            }
+        }
+
+        // Improved fullscreen toggle with aspect ratio handling
+        function toggleFullscreen() {
+            const videoContainer = document.querySelector('.video-feed');
+            
+            if (!document.fullscreenElement) {
+                videoContainer.requestFullscreen().then(() => {
+                    // Keep object-fit: contain in fullscreen to show full video without cropping
+                    webcamFeed.style.objectFit = 'contain';
+                }).catch(err => {
+                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Switch between grid and analytics view
+        function toggleView(viewMode) {
+            if (viewMode === 'grid') {
+                studentGrid.classList.remove('hidden');
+                analyticsView.classList.add('hidden');
+                gridViewBtn.className = 'btn btn-primary';
+                analyticsViewBtn.className = 'btn btn-secondary';
+            } else {
+                studentGrid.classList.add('hidden');
+                analyticsView.classList.remove('hidden');
+                gridViewBtn.className = 'btn btn-secondary';
+                analyticsViewBtn.className = 'btn btn-primary';
+                updateAnalyticsTable();
+            }
+        }
+
+        // Switch between sidebar tabs with scrolling to appropriate sections
+        function switchTab(tabId, viewMode) {
+            tabContents.forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            sidebarButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // If clicking on Students or Analytics tab, scroll to the monitoring section
+            if (tabId === 'students' || tabId === 'analytics') {
+                // First show the dashboard tab to ensure the section is visible
+                document.getElementById('dashboard-tab').classList.remove('hidden');
+                
+                // Then scroll to monitoring section
+                monitoringSection.scrollIntoView({ behavior: 'smooth' });
+                
+                // And switch to the appropriate view
+                if (viewMode === 'grid') {
+                    toggleView('grid');
+                } else if (viewMode === 'analytics') {
+                    toggleView('analytics');
+                }
+            }
+        }
+
+        // Update current time display
+        function updateTimeDisplay() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            currentTimeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const navLinks = document.getElementById('nav-links');
+            navLinks.classList.toggle('open');
+        }
+        
+        // Initialize the dashboard
+        function init() {
+            // Setup user profile with avatar
+            setupUserProfile();
+            
+            // Initialize socket connection
+            initSocketConnection();
+            
+            // Add event listeners
+            pauseBtn.addEventListener('click', togglePause);
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            startMonitoringBtn.addEventListener('click', startMonitoring);
+            stopMonitoringBtn.addEventListener('click', () => stopMonitoring(true));
+            gridViewBtn.addEventListener('click', () => toggleView('grid'));
+            analyticsViewBtn.addEventListener('click', () => toggleView('analytics'));
+            
+            // Sidebar tab switching with view mode
+            sidebarButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    const viewMode = button.getAttribute('data-view');
+                    switchTab(tabId, viewMode);
+                });
+            });
+            
+            // Mobile menu toggle
+            document.querySelector('.nav_menu_btn').addEventListener('click', toggleMobileMenu);
+            
+            // Update time display every second
+            setInterval(updateTimeDisplay, 1000);
+            updateTimeDisplay();
+            
+            // Generate initial student cards
+            updateStudentCards();
+            
+            console.log('Dashboard initialization complete');
+        }
+
+        // Initialize when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>

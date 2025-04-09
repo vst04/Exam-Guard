@@ -1,0 +1,107 @@
+<!-- signup.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <title>EXAM GUARD - Sign Up</title>
+  </head>
+  <body>
+    <div id="vanta-bg">
+    <nav>
+      <div class="nav__header">
+        <div class="nav__logo">
+          <a href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="logo" />
+            <span>EXAM GUARD</span>
+          </a>
+        </div>
+        <div class="nav__menu__btn" id="menu-btn">
+          <i class="ri-menu-line"></i>
+        </div>
+      </div>
+      <ul class="nav__links" id="nav-links">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('about') }}">About</a>
+      </ul>
+    </nav>
+
+    <div class="login container">
+      <div class="login__register">
+        <h1 class="login__title">Create Account</h1>
+
+        <div class="login__area">
+          <form action="{{ url_for('signup') }}" method="POST" class="login__form">
+            <div class="login__content">
+              <div class="login__group">
+                <div class="login__box">
+                  <input type="text" id="names" name="firstName" required placeholder=" " class="login__input">
+                  <label for="names" class="login__label">First Name</label>
+                  <i class="ri-user-fill login__icon"></i>
+                </div>
+  
+                <div class="login__box">
+                  <input type="text" id="surnames" name="lastName" required placeholder=" " class="login__input">
+                  <label for="surnames" class="login__label">Last Name</label>
+                  <i class="ri-user-fill login__icon"></i>
+                </div>
+              </div>
+
+              <div class="login__box">
+                <input type="email" id="emailCreate" name="email" required placeholder=" " class="login__input">
+                <label for="emailCreate" class="login__label">Email</label>
+                <i class="ri-mail-fill login__icon"></i>
+              </div>
+
+              <div class="login__box">
+                <input type="password" id="passwordCreate" name="password" required placeholder=" " class="login__input">
+                <label for="passwordCreate" class="login__label">Password</label>
+                <i class="ri-eye-off-fill login__icon login__password" id="loginPasswordCreate"></i>
+              </div>
+            </div>
+
+            <button type="submit" class="login__button">Create account</button>
+          </form>
+
+          <p class="login__switch">
+            Already have an account? 
+            <a href="{{ url_for('login') }}" class="login__switch-button">Log In</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="login__decoration"></div>
+    </div>
+  </div>
+
+    <script src="https://unpkg.com/scrollreveal"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.fog.min.js"></script>
+    <script>
+      VANTA.FOG({
+        el: "#vanta-bg",
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        highlightColor: 0x0,
+        midtoneColor: 0x8bd4,
+        lowlightColor: 0x0,
+        baseColor: 0x0,
+        blurFactor: 0.9,
+        speed: 1.2,
+        zoom: 0.4,
+      });
+  
+      function toggleMenu() {
+        document.getElementById("nav-links").classList.toggle("open");
+      }
+    </script>
+  </body>
+</html>

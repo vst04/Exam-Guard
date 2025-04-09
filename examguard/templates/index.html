@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="C:\Users\vst04\Desktop\yolo v5 testing\examguard\static\css\styles.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+
+    <title>EXAM GUARD</title>
+    <script type="module" src="login.js"></script>
+  </head>
+  <body>
+    <div id="vanta-bg">
+    <nav>
+      <div class="nav__header">
+        <div class="nav__logo">
+          <a href="#">
+            <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="logo" />
+            <span>EXAM GUARD</span>
+          </a>
+        </div>
+        <div class="nav__menu__btn" id="menu-btn">
+          <i class="ri-menu-line"></i>
+        </div>
+      </div>
+      <ul class="nav__links" id="nav-links">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('about') }}">About</a>
+      </ul>
+    </nav>
+    <header class="header__container">
+      <div class="header__image">
+        <img src="{{ url_for('static', filename='assets/header.png') }}" alt="logo" />
+      </div>
+      <div class="header__content">
+        <h1>
+            Better, Safer, Secure
+          </h1>
+          <h2 class="subtitle">
+            Guarding integrity in every exam classroom.
+          </h2>
+        <p>
+            AI Monitoring:&nbsp;  Detect cheats.<br>
+            Seat Count:&nbsp;  Track occupancy.<br>
+            Instant Alerts:&nbsp;  Notify proctors.<br>
+            Movement Tracking:&nbsp;  Spot unusual activity.<br>
+            Reports:&nbsp;  Flag incidents.<br>
+        </p>
+        <div class="header__btn">
+          <a href="{{ url_for('login') }}" class="btn">GET STARTED</a>
+        </div>
+        
+        <ul class="socials">
+          <li>
+            <a href="#"><i class="ri-instagram-fill"></i></a>
+          </li>
+          <li>
+            <a href="#"><i class="ri-mail-fill"></i></a>
+          </li>
+          <li>
+            <a href="#"><i class="ri-twitter-x-fill"></i></a> <!-- X (Twitter) icon -->
+          </li>
+        </ul>
+        
+        
+        <div class="header__bar">
+          Â© EXAM GUARD
+        </div>
+      </div>
+    </div>
+    </header>
+    <div class="footer"></div>
+
+     <!-- Features Section Start -->
+     <section class="features__container">
+      <div class="features__header">
+        <h2>What are the smart capabilities of the software?</h2>
+      </div>
+
+      <div class="features__grid">
+        <!-- Feature 1: Facial Recognition -->
+        <div class="feature__card">
+          <div class="feature__content">
+            <h3>AI Monitoring</h3>
+            <p>
+              AI monitoring detects cheating by analyzing head movements,
+               hand gestures, and posture changes using object detection and 
+               body coordinates. It identifies suspicious behavior and ensures 
+               fair exams with real-time alerts.
+            </p>
+          </div>
+          <div class="feature__image">
+            <img src="../static/assets/ai-monitoring.jpeg" alt="ai monitoring" />
+            <div class="feature__check">
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: Noise Detection -->
+        <div class="feature__card">
+          <div class="feature__content">
+            <h3>Instant Alerts</h3>
+            <p>
+              AI monitoring instantly alerts proctors to suspicious behavior, including unusual movements or unauthorized device usage, enabling quick intervention and maintaining exam integrity by preventing cheating and ensuring a fair testing environment.
+          </div>
+          <div class="feature__image">
+            <img src="../static/assets/Instant-alerts.jpeg" alt="Instant Alerts" />
+          </div>
+        </div>
+
+        <!-- Feature 3: ID Verification -->
+        <div class="feature__card">
+          <div class="feature__content">
+            <h3>Reports</h3>
+            <p>
+              Reports that flag suspicious incidents, offering detailed records of detected cheating attempts for review and verification. These reports ensure transparency, assist proctors in decision-making, and help maintain exam integrity effectively.
+            </p>
+          </div>
+          <div class="feature__image">
+            <img src="../static/assets/flag-incidents.jpeg" alt="reports" />
+          </div>
+        </div>
+
+        <!-- Feature 4: Web Search Detection -->
+        <div class="feature__card">
+          <div class="feature__content">
+            <h3>Seat Count</h3>
+            <p>
+              AI monitoring detects and counts students, ensuring accurate attendance tracking and exam security. It provides real-time data to proctors, helping them monitor exam rooms efficiently and maintain a well-organized testing environment.
+            </p>
+          </div>
+          <div class="feature__image">
+            <img src="../static/assets/Seat_Count.png" alt="Seat Count" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer"></div> 
+
+    <!-- Features Section End -->
+    <section class="faq-section">
+      <div class="container">
+          <h2 class="section-title">Frequently Asked Questions</h2>
+          
+          <div class="faq-grid">
+              <!-- Question 1 -->
+              <div class="faq-item">
+                  <div class="faq-question">
+                      <span>What is an Exam Monitoring System?</span>
+                      <div class="arrow"></div>
+                  </div>
+                  <div class="faq-answer">
+                      <p>A cheating detection system is an advanced technological solution designed to identify and prevent dishonest practices during exams, assessments, or tests. This system utilizes various methods such as AI-based video analysis, facial recognition, and behavioral tracking to detect suspicious activities like unauthorized resource usage, impersonation, or unusual movements. By ensuring a fair and secure testing environment, it helps maintain the integrity and credibility of academic evaluations.</p>
+                  </div>
+              </div>
+  
+              <!-- Question 2 -->
+              <div class="faq-item">
+                  <div class="faq-question">
+                      <span>How does an exam proctoring system identify cheating?</span>
+                      <div class="arrow"></div>
+                  </div>
+                  <div class="faq-answer">
+                      <p>Exam monitoring systems use video recording and AI analysis to track the number of students present and detect any suspicious behavior that may indicate cheating or rule violations. These systems can automatically flag potential issues and notify instructors or proctors for further review.</p>
+                  </div>
+              </div>
+  
+              <!-- Question 3 -->
+              <div class="faq-item">
+                  <div class="faq-question">
+                      <span>How does the Exam Guard exam monitoring system work?</span>
+                      <div class="arrow"></div>
+                  </div>
+                  <div class="faq-answer">
+                      <p>Exam Guard is an AI-powered exam monitoring system that uses computer vision techniques like MediaPipe and YOLOv5 to detect cheating in exam halls through CCTV surveillance. The system processes live video feeds to analyze student behavior, identifying suspicious actions such as looking away frequently, using unauthorized devices, or communicating with others. When cheating is detected, the system generates alerts and logs the event in a database for review. The collected data helps in maintaining exam integrity and provides a detailed report for invigilators to take necessary actions.</p>
+                  </div>
+              </div>
+  
+              <!-- Question 4 -->
+              <div class="faq-item">
+                  <div class="faq-question">
+                      <span>What technologies does Exam Guard use for cheating detection?</span>
+                      <div class="arrow"></div>
+                  </div>
+                  <div class="faq-answer">
+                      <p>Exam Guard utilizes advanced computer vision and AI technologies, including MediaPipe and YOLOv5, to analyze real-time video feeds from CCTV cameras. MediaPipe helps in detecting facial landmarks and gaze direction, while YOLOv5 is used for object detection to identify unauthorized devices or suspicious actions. These technologies work together to monitor student behavior, detect potential cheating attempts, and generate automated alerts and reports for further review by exam invigilators.</p>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </section>
+
+    <footer class="footer">
+      <div class="footer__container">
+        <div class="footer__top">
+          <div class="footer__logo">
+            <img src="../static/assets/logo.png" alt="EXAM GUARD logo" />
+            <span>EXAM GUARD</span>
+          </div>
+    
+          <ul class="footer__socials">
+            <li>
+              <a href="https://instagram.com/yourprofile" target="_blank" class="instagram">
+                <i class="ri-instagram-fill"></i>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/yourprofile" target="_blank" class="twitter">
+                <i class="ri-twitter-fill"></i>
+              </a>
+            </li>
+            <li>
+              <a href="#" class="mail">
+                <i class="ri-mail-fill"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+    
+        <div class="footer__bottom">
+          <p class="footer__copyright">
+            &copy; 2025 EXAM GUARD. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.querySelectorAll('.faq__question').forEach(button => {
+        button.addEventListener('click', () => {
+          const answer = button.nextElementSibling;
+          answer.classList.toggle('active');
+        });
+      });
+      </script>
+      
+    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.fog.min.js"></script>
+<script>
+  VANTA.FOG({
+    el: "#vanta-bg",
+    mouseControls: true,
+    touchControls: true,
+    gyroControls: false,
+    highlightColor: 0x0,
+    midtoneColor: 0x8bd4,
+    lowlightColor: 0x0,
+    baseColor: 0x0,
+    blurFactor: 0.9,
+    speed: 1.2,
+    zoom: 0.4,
+  });
+</script>
+
+
+    <script src="https://unpkg.com/scrollreveal"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    
+    <script>
+      document.querySelectorAll('.faq-question').forEach(item => {
+          item.addEventListener('click', () => {
+              const parent = item.parentElement;
+              parent.classList.toggle('active');
+          });
+      });
+      </script>
+  </body>
+</html>

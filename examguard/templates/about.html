@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="about.css" />
+    <title>EXAM GUARD - About</title>
+  </div>
+  </head>
+  <body>
+    <div id="vanta-bg">
+    <nav>
+      <div class="nav__header">
+        <div class="nav__logo">
+          <a href="index.html">
+            <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="logo" />
+            <span>EXAM GUARD</span>
+          </a>
+        </div>
+        <div class="nav_menu_btn" id="menu-btn">
+          <i class="ri-menu-line"></i>
+        </div>
+      </div>
+      <ul class="nav__links" id="nav-links">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('about') }}">About</a>
+      </ul>
+    </nav>
+
+    <div class="about-header">
+      <h1>About Us</h1>
+      <p>Meet the team behind Exam Guard.</p>
+    </div>
+
+    <div class="developers">
+      <div class="developer-card">
+        <img src="{{ url_for('static', filename='assets/developer1.jpg') }}" alt="logo" />
+
+        <h3>Vimal</h3>
+        <p>Lead Developer</p>
+        <div class="developer-socials">
+          <a href="https://www.linkedin.com/in/vimal-s-thomas-175264227?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" class="social-icon"><i class="ri-linkedin-fill"></i></a>
+          <a href="https://github.com/vst04" class="social-icon"><i class="ri-github-fill"></i></a>
+        </div>
+      </div>
+
+      <div class="developer-card">
+        <img src="{{ url_for('static', filename='assets/developer2.jpg') }}" alt="logo" />
+        <h3>Joe Gisto</h3>
+        <p>Back-end Developer</p>
+        <div class="developer-socials">
+          <a href="https://www.linkedin.com/in/joe-gisto-3ab252226/" class="social-icon"><i class="ri-linkedin-fill"></i></a>
+          <a href="https://github.com/joegisto" class="social-icon"><i class="ri-github-fill"></i></a>
+        </div>
+      </div>
+
+      <div class="developer-card">
+        <img src="{{ url_for('static', filename='assets/developer3.jpg') }}" alt="logo" />
+        <h3>Nandagopal</h3>
+        <p>Front-end Developer</p>
+        <div class="developer-socials">
+          <a href="https://www.linkedin.com/in/nandagopals" class="social-icon"><i class="ri-linkedin-fill"></i></a>
+          <a href="https://github.com/nandagopal30/nandagopal30" class="social-icon"><i class="ri-github-fill"></i></a>
+        </div>
+      </div>
+
+      <div class="developer-card">
+        <img src="{{ url_for('static', filename='assets/developer4.jpg') }}" alt="logo" />
+        <h3>Naveen</h3>
+        <p>Front-end Developer</p>
+        <div class="developer-socials">
+          <a href="https://www.linkedin.com/in/naveen-u-0558ba29a?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app" class="social-icon"><i class="ri-linkedin-fill"></i></a>
+          <a href="https://github.com/NAVEENU90" class="social-icon"><i class="ri-github-fill"></i></a>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.fog.min.js"></script>
+<script>
+  VANTA.FOG({
+    el: "#vanta-bg",
+    mouseControls: true,
+    touchControls: true,
+    gyroControls: false,
+    highlightColor: 0x0,
+    midtoneColor: 0x8bd4,
+    lowlightColor: 0x0,
+    baseColor: 0x0,
+    blurFactor: 0.9,
+    speed: 1.2,
+    zoom: 0.4,
+  });
+</script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>
