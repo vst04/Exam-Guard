@@ -1,6 +1,0 @@
-# data.yaml
-train: C:\Users\vst04\Desktop\yolo v5 testing\dataset\images\train
-val: C:\Users\vst04\Desktop\yolo v5 testing\dataset\images\val
-
-nc: 4  # number of classes
-names: ['head turn', 'handing paper', 'hand gestures', 'smartphone']  # replace with your class names
