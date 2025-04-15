@@ -87,3 +87,12 @@ The project consists of several key components:
 - Firebase Admin SDK
 - ReportLab
 - Socket.IO
+
+![Login Page](examguard/static/assets/index.png)
+![Login Page](examguard/static/assets/about.png)
+![Login Page](examguard/static/assets/signup.png)
+![Login Page](examguard/static/assets/login.png)
+![Login Page](examguard/static/assets/dashboard.png)
+![Login Page](examguard/static/assets/gridview.png)
+![Login Page](examguard/static/assets/analyticalview.png)
+![Login Page](examguard/static/assets/team.png)
