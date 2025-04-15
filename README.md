@@ -2,82 +2,97 @@
 
 ExamGuard is an AI-powered exam proctoring system designed to detect and report malpractice during exams through computer vision and machine learning techniques.
 
-## Project Overview
+---
 
-ExamGuard uses a combination of YOLOv8 and MediaPipe to detect suspicious activities during exams including:
-- Head turning (looking at other students' papers)
-- Hand gestures (signaling or communicating)
-- Phone usage (accessing unauthorized materials)
-- Paper exchange (sharing answers or notes)
+## 🧠 Project Overview
 
-The system captures snapshots of detected violations rather than continuous video recording, providing evidence while preserving privacy and conserving storage space.
+ExamGuard uses a combination of YOLOv8 and MediaPipe to detect suspicious activities including:
+- Head turning
+- Hand gestures
+- Phone usage
+- Paper exchange
 
-## Key Features
+The system captures **snapshot evidence** (not continuous recording), enhancing **privacy** and reducing storage needs.
 
-- **Real-time Monitoring**: Process webcam feed to detect suspicious activities 
-- **Snapshot Evidence**: Capture both cropped and full-frame images when violations are detected
-- **Student Tracking**: Identify and track individual students throughout the session
-- **Dashboard Interface**: Modern web interface for monitoring and reviewing detections
-- **PDF Report Generation**: Automatically generate comprehensive violation reports
-- **Firebase Integration**: User authentication and data storage
+---
 
-## Technical Architecture
+## 🚀 Key Features
 
-The project consists of several key components:
+- **Real-time Monitoring**
+- **Snapshot Evidence Collection**
+- **Student Tracking**
+- **Dashboard Interface**
+- **PDF Report Generation**
+- **Firebase Integration**
 
-### Backend (Python)
-- **app.py**: Main Flask application with:
-  - Socket.IO for real-time communication
-  - Firebase integration for authentication
-  - Webcam feed processing
-  - Detection algorithms
-  
-- **student_tracker.py**: Handles:
-  - Student identification and tracking
-  - Violation recording
-  - Snapshot capture and management
-  - PDF report generation
+---
 
-### AI Models
-- YOLOv8 for primary object detection (head turning, paper exchange, etc.)
-- MediaPipe for secondary detection (face landmarks, hand tracking, etc.)
+## 🖼️ Frontend Pages
 
-### Frontend
-- Interactive dashboard with real-time updates
-- Grid and analytics views of student violations
-- Full-frame video display without cropping
+### 🔹 Index Page
+![Index Page](examguard/static/assets/index.png)
 
-## How It Works
+### 🔹 About Page
+![About Page](examguard/static/assets/about.png)
 
-1. The system initializes the webcam feed and loads AI models
-2. Each frame is processed to detect potential malpractice
-3. When violations are detected:
-   - The system assigns the detection to a specific student
-   - It captures both a cropped image of the student and a full-frame image
-   - Violation counts are updated in real-time
-4. At the end of the session, a comprehensive PDF report is generated with violation evidence
+### 🔹 Signup Page
+![Signup Page](examguard/static/assets/signup.png)
 
-## Technical Details
+### 🔹 Login Page
+![Login Page](examguard/static/assets/login.png)
 
-### Detection Methods
+### 🔹 Dashboard View
+![Dashboard](examguard/static/assets/dashboard1.png)
 
-- **Head Turning**: Uses both YOLO detection and MediaPipe face landmarks to detect head orientation and track turning
-- **Hand Gestures**: Combines YOLO object detection with MediaPipe hand tracking for comprehensive gesture recognition
-- **Phone Usage**: YOLO-based detection specifically trained to recognize smartphone usage
-- **Paper Exchange**: YOLO-based detection for unusual paper movement
+### 🔹 Grid View
+![Grid View](examguard/static/assets/gridview.png)
 
-### Data Storage
+### 🔹 Analytical View
+![Analytical View](examguard/static/assets/analyticalview.png)
 
-- Student violations are tracked in memory during the session
-- Evidence snapshots are saved to a session-specific directory
-- Violation data is exported to JSON for potential further analysis
-- PDF reports compile all evidence and statistics
+### 🔹 Team Page
+![Team Page](examguard/static/assets/team.png)
 
-## Installation & Setup
+---
 
-(Instructions for installation and setup would go here)
+## ⚙️ Technical Architecture
 
-## Requirements
+### 🐍 Backend (Python)
+
+- **Flask + Socket.IO** for real-time communication  
+- **Firebase** for authentication and storage  
+- **OpenCV + MediaPipe + YOLOv8** for detection and tracking  
+- **PDF Reports** using ReportLab
+
+---
+
+## 🧠 AI Models
+
+- **YOLOv8** for detecting head turns, phone usage, paper exchange  
+- **MediaPipe** for face and hand landmarks  
+
+---
+
+## 📈 How It Works
+
+1. Webcam feed is initialized
+2. Each frame is analyzed for malpractice
+3. On detection:
+   - Student is identified and tracked
+   - Evidence snapshots are taken
+4. A **PDF report** is generated at the end
+
+---
+
+## 📁 Data Storage
+
+- Violations tracked in session memory
+- Snapshots saved per session
+- JSON + PDF exported at the end
+
+---
+
+## 💾 Requirements
 
 - Python 3.8+
 - Flask
@@ -86,13 +101,5 @@ The project consists of several key components:
 - MediaPipe
 - Firebase Admin SDK
 - ReportLab
-- Socket.IO
+- Flask-SocketIO
 
-![Login Page](examguard/static/assets/index.png)
-![Login Page](examguard/static/assets/about.png)
-![Login Page](examguard/static/assets/signup.png)
-![Login Page](examguard/static/assets/login.png)
-![Login Page](examguard/static/assets/dashboard.png)
-![Login Page](examguard/static/assets/gridview.png)
-![Login Page](examguard/static/assets/analyticalview.png)
-![Login Page](examguard/static/assets/team.png)
