@@ -6,7 +6,7 @@ ExamGuard is an AI-powered exam proctoring system designed to detect and report 
 
 ## 🧠 Project Overview
 
-ExamGuard uses a combination of YOLOv8 and MediaPipe to detect suspicious activities including:
+ExamGuard uses a combination of YOLOv5s and MediaPipe to detect suspicious activities including:
 - Head turning
 - Hand gestures
 - Phone usage
@@ -61,14 +61,14 @@ The system captures **snapshot evidence** (not continuous recording), enhancing 
 
 - **Flask + Socket.IO** for real-time communication  
 - **Firebase** for authentication and storage  
-- **OpenCV + MediaPipe + YOLOv8** for detection and tracking  
+- **OpenCV + MediaPipe + YOLOv5s** for detection and tracking  
 - **PDF Reports** using ReportLab
 
 ---
 
 ## 🧠 AI Models
 
-- **YOLOv8** for detecting head turns, phone usage, paper exchange  
+- **YOLOv5s** for detecting head turns, phone usage, paper exchange  
 - **MediaPipe** for face and hand landmarks  
 
 ---
