@@ -2,7 +2,7 @@ import base64
 import cv2
 import numpy as np
 import torch
-from ultralytics import YOLO
+# Change from ultralytics import to YOLOv5 import
 import os
 import logging
 import threading
@@ -347,17 +347,17 @@ def get_class_threshold(cls):
     return CLASS_THRESHOLDS.get(int(cls), 0.05)  # Default threshold for unknown classes
 
 def initialize_models():
-    """Initialize YOLO and MediaPipe models"""
+    """Initialize YOLOv5 and MediaPipe models"""
     global yolo_model, mediapipe_detector, device
     
     try:
-        # Try different possible model paths
+        # Try different possible model paths with priority to the requested path
         model_paths = [
-            "bestyolov8.pt",
-            os.path.join(os.path.dirname(__file__), "bestyolov8.pt"),
-            os.path.join(os.path.dirname(__file__), "examguard", "bestyolov8.pt"),
-            "examguard/bestyolov8.pt",
-            "C:\\Users\\vst04\\Desktop\\Exam Guard\\examguard\\bestyolov8.pt"
+            "C:\\Users\\vst04\\Desktop\\Exam Guard\\examguard\\best.pt",  # Requested path
+            "best.pt",
+            os.path.join(os.path.dirname(__file__), "best.pt"),
+            os.path.join(os.path.dirname(__file__), "examguard", "best.pt"),
+            "examguard/best.pt"
         ]
         
         model_path = None
@@ -374,11 +374,12 @@ def initialize_models():
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         logger.info(f"Using device: {device}")
         
-        # Load YOLOv8 model
-        logger.info(f"Loading YOLOv8 model from {model_path}")
-        yolo_model = YOLO(model_path)
+        # Load YOLOv5 model
+        logger.info(f"Loading YOLOv5 model from {model_path}")
+        # Changed from ultralytics YOLO to torch load for YOLOv5
+        yolo_model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
         
-        # Configure model parameters
+        # Configure model parameters for YOLOv5
         yolo_model.conf = 0.3  # Confidence threshold
         yolo_model.iou = 0.45  # NMS IOU threshold
         yolo_model.agnostic = False  # NMS class-agnostic
@@ -391,7 +392,7 @@ def initialize_models():
         
         # Test model with a dummy image
         dummy_img = np.zeros((640, 640, 3), dtype=np.uint8)
-        test_results = yolo_model(dummy_img, verbose=False)
+        test_results = yolo_model(dummy_img)
         logger.info("Model test successful")
         
         logger.info("Models loaded successfully")
@@ -500,9 +501,20 @@ def detection_loop():
                 # Create a copy of the frame for processing
                 process_frame = frame.copy()
                 
-                # Run YOLO detection (primary detection method)
-                yolo_results = yolo_model(process_frame, conf=0.3, iou=0.45)[0]
-                yolo_detections = yolo_results.boxes
+                # Run YOLOv5 detection (primary detection method)
+                # Changed from YOLOv8 to YOLOv5 processing
+                yolo_results = yolo_model(process_frame)
+                
+                # YOLOv5 detection processing is different from YOLOv8
+                yolo_detections = []
+                
+                for i, (x1, y1, x2, y2, conf, cls) in enumerate(yolo_results.xyxy[0].cpu().numpy()):
+                    if conf >= get_class_threshold(cls):
+                        yolo_detections.append({
+                            'cls': torch.tensor([cls]),
+                            'conf': torch.tensor([conf]),
+                            'xyxy': torch.tensor([[x1, y1, x2, y2]])
+                        })
                 
                 # If no YOLO detections, use MediaPipe as fallback
                 holistic_results = None
@@ -512,13 +524,7 @@ def detection_loop():
                     
                     # If MediaPipe found something, add these detections
                     if mediapipe_boxes:
-                        for mp_box in mediapipe_boxes:
-                            # The format needs to match YOLO's boxes format
-                            yolo_detections.append({
-                                'cls': mp_box['cls'],
-                                'conf': mp_box['conf'],
-                                'xyxy': mp_box['xyxy'][0]  # Get the first (and only) box
-                            })
+                        yolo_detections.extend(mediapipe_boxes)
                 
                 # Create copy for drawing
                 result_frame = frame.copy()
@@ -533,14 +539,11 @@ def detection_loop():
                 
                 # Draw detections
                 for box in yolo_detections:
-                    cls = int(box.cls[0]) if hasattr(box, 'cls') else int(box['cls'][0])
-                    conf = float(box.conf[0]) if hasattr(box, 'conf') else float(box['conf'][0])
+                    cls = int(box['cls'][0]) if 'cls' in box else 0
+                    conf = float(box['conf'][0]) if 'conf' in box else 0.0
                     
                     if conf >= get_class_threshold(cls):
-                        if hasattr(box, 'xyxy'):
-                            xyxy = box.xyxy[0].cpu().numpy()
-                        else:
-                            xyxy = box['xyxy'].cpu().numpy() if torch.is_tensor(box['xyxy']) else box['xyxy']
+                        xyxy = box['xyxy'].cpu().numpy()[0]
                         
                         x1, y1, x2, y2 = map(int, xyxy)
                         
@@ -586,9 +589,6 @@ def detection_loop():
                 if student_tracker:
                     detection_stats['total_students'] = student_tracker.get_student_count()
                 
-                # Note: Video recording removed - incidents are captured as snapshots
-                # by the student_tracker.update_student_data method
-                
                 # Update latest frame
                 with frame_lock:
                     latest_frame = result_frame.copy()
@@ -628,7 +628,6 @@ def detection_loop():
         detection_active = False
         if cap is not None:
             cap.release()
-        # Video writer removed - using snapshots only
         logger.info("Detection loop ended")
         socketio.emit('monitoring_status', {'status': 'stopped'})
 
